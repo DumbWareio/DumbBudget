@@ -32,6 +32,7 @@ DumbBudget supports the following currencies:
 - CNY (Chinese Yuan) 🇨🇳
 - HKD (Hong Kong Dollar) 🇭🇰
 - NZD (New Zealand Dollar) 🇳🇿
+- NOK (Norwegian Krone)  🇳🇴
 
 Set your preferred currency using the `CURRENCY` environment variable (defaults to USD if not set).
 
