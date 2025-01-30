@@ -1,36 +1,6 @@
 {
   "2025-01": {
     "income": [
-      {
-        "id": "c5ea50ff-495b-43c8-a564-0bd44eb6ff7c",
-        "amount": 1000,
-        "description": "test",
-        "date": "2025-01-29"
-      },
-      {
-        "id": "f4a5fd70-430b-4041-9d13-d4f434627c51",
-        "amount": 1000,
-        "description": "test",
-        "date": "2025-01-29"
-      },
-      {
-        "id": "90a35eeb-8a58-45c9-80da-fc142cfad975",
-        "amount": 1000,
-        "description": "test",
-        "date": "2025-01-29"
-      },
-      {
-        "id": "509bfbcb-bc93-4886-84f9-19b428b7fc9f",
-        "amount": 100,
-        "description": "test",
-        "date": "2025-01-29"
-      },
-      {
-        "id": "3ac62b13-c9ed-4eaf-b7d4-54337baf8169",
-        "amount": 60,
-        "description": "test",
-        "date": "2025-01-28"
-      }
     ]
   },
   "2024-01": {
