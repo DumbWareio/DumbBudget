@@ -6,11 +6,19 @@ const crypto = require('crypto');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const fs = require('fs').promises;
+const cors = require('cors');
+const { getCorsOptions, originValidationMiddleware } = require('./scripts/cors');
+const { generatePWAManifest } = require('./scripts/pwa-manifest-generator');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'production';
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const SITE_TITLE = process.env.SITE_TITLE || 'DumbBudget';
+const INSTANCE_NAME = process.env.INSTANCE_NAME || '';
+const SITE_INSTANCE_TITLE = INSTANCE_NAME ? `${SITE_TITLE} - ${INSTANCE_NAME}` : SITE_TITLE;
+const PUBLIC_DIR = path.join(__dirname, 'public');
+const ASSETS_DIR = path.join(PUBLIC_DIR, 'assets');
 
 // Get the project name from package.json to use for the PIN environment variable
 const projectName = require('./package.json').name.toUpperCase().replace(/-/g, '_');
@@ -117,6 +125,16 @@ function recordAttempt(ip) {
     loginAttempts.set(ip, attempts);
 }
 
+generatePWAManifest(SITE_INSTANCE_TITLE);
+
+// Middleware
+// Trust proxy - required for secure cookies behind a reverse proxy
+app.set('trust proxy', 1);
+
+// Cors Setup
+const corsOptions = getCorsOptions(BASE_URL);
+app.use(cors(corsOptions));
+
 // Security middleware - minimal configuration like DumbDrop
 app.use(helmet({
     contentSecurityPolicy: false,
@@ -186,9 +204,23 @@ const authMiddleware = (req, res, next) => {
 app.use(BASE_PATH, express.static('public', { index: false }));
 
 // Routes
-app.get(BASE_PATH + '/', authMiddleware, (req, res) => {
+app.get(BASE_PATH + '/', [originValidationMiddleware, authMiddleware], (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// Serve the pwa/asset manifest
+app.get('/asset-manifest.json', (req, res) => {
+    // generated in pwa-manifest-generator and fetched from service-worker.js
+    res.sendFile(path.join(ASSETS_DIR, 'asset-manifest.json'));
+});
+app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.join(ASSETS_DIR, 'manifest.json'));
+});
+
+app.get('/managers/toast', (req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'managers', 'toast.js'));
+});
+
 
 app.get(BASE_PATH + '/login', (req, res) => {
     if (!PIN || PIN.trim() === '') {
@@ -201,12 +233,7 @@ app.get(BASE_PATH + '/login', (req, res) => {
 });
 
 app.get(BASE_PATH + '/api/config', (req, res) => {
-    let instanceName = process.env.SITE_TITLE;
-    if (instanceName == undefined) {
-        instanceName = 'DumbBudget';
-    } else {
-        instanceName = `DumbBudget - ${process.env.SITE_TITLE}`
-    }
+    const instanceName = SITE_INSTANCE_TITLE;
     res.json({ instanceName: instanceName });
 });
 
@@ -255,7 +282,7 @@ app.post(BASE_PATH + '/verify-pin', (req, res) => {
             // Set secure cookie
             res.cookie(`${projectName}_PIN`, pin, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: req.secure || (BASE_URL.startsWith('https') && NODE_ENV === 'production'),
                 sameSite: 'strict',
                 maxAge: 24 * 60 * 60 * 1000 // 24 hours
             });
@@ -899,7 +926,7 @@ app.get(BASE_PATH + '/config.js', (req, res) => {
     res.send(`window.appConfig = {
         debug: ${DEBUG},
         basePath: '${BASE_PATH}',
-        title: '${SITE_TITLE}'
+        title: '${SITE_INSTANCE_TITLE}'
     };`);
 });
 
@@ -976,7 +1003,7 @@ app.get(BASE_PATH + '/api/calendar/transactions', apiAuthMiddleware, async (req,
 
 // Add logging to server startup
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on ${BASE_URL}`);
     debugLog('Debug mode enabled');
     debugLog('Base path:', BASE_PATH);
 }); 

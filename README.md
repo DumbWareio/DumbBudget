@@ -18,6 +18,7 @@ A simple, secure personal budgeting app with PIN protection. Track your income a
 - 📤 Export to CSV
 - 🔍 Filter transactions by type
 - 💱 Multi-currency support
+- 🌐 PWA Support
 
 ## Supported Currencies
 
@@ -61,6 +62,33 @@ docker run -d \
   dumbwareio/dumbbudget:latest
 ```
 
+```yaml
+services:
+  dumbbudget:
+    image: dumbwareio/dumbbudget:latest
+    container_name: dumbbudget
+    restart: unless-stopped
+    ports:
+      - ${DUMBBUDGET_PORT:-3000}:3000
+    volumes:
+      - ${DUMBBUDGET_DATA_PATH:-./data}:/app/data
+    environment:
+      - DUMBBUDGET_PIN=${DUMBBUDGET_PIN:-} # PIN to access the site
+      - BASE_URL=${DUMBBUDGET_BASE_URL:-http://localhost:3000} # URL to access the site
+      - CURRENCY=${DUMBBUDGET_CURRENCY:-USD} # Supported Currency Code: https://github.com/DumbWareio/DumbBudget?tab=readme-ov-file#supported-currencies
+      - SITE_TITLE=${DUMBBUDGET_SITE_TITLE:-DumbBudget} # Name to show on site
+      - INSTANCE_NAME=${DUMBBUDGET_INSTANCE_NAME:-} # Name of instance/account
+      # (OPTIONAL)
+      # Restrict origins - ex: https://subdomain.domain.tld,https://auth.proxy.tld,http://internalip:port' (default is '*')
+      # - ALLOWED_ORIGINS=${DUMBBUDGET_ALLOWED_ORIGINS:-http://localhost:3000}
+    # healthcheck:
+    #   test: wget --spider -q  http://127.0.0.1:3000
+    #   start_period: 20s
+    #   interval: 20s
+    #   timeout: 5s
+    #   retries: 3
+```
+
 > **Note**: Replace `/path/to/your/data` with the actual path where you want to store your transaction data on the host machine.
 
 ### Environment Variables
@@ -93,7 +121,9 @@ PORT=3000
 NODE_ENV=development
 BASE_URL=http://localhost:3000
 CURRENCY=USD
-SITE_TITLE='My Account'
+SITE_TITLE='DumbBudget'
+INSTANCE_NAME='My Account'
+ALLOWED_ORIGINS=* # Restrict origins - ex: https://subdomain.domain.tld,https://auth.proxy.tld,http://internalip:port' (default is '*')
 ```
 
 4. Start the development server:

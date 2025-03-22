@@ -5,15 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loading...</title>
     <script src="config.js"></script>
+    <link rel="manifest" href="manifest.json">
     <script>
+        // Prevent theme flicker by setting theme immediately
+        (function() {
+            const theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
         document.addEventListener('DOMContentLoaded', () => {
-            const siteTitle = window.appConfig.title || 'DumbBudget';
+            const siteTitle = window.appConfig.title;
             document.title = siteTitle;
             document.querySelector('h1').textContent = siteTitle;
         });
     </script>
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
     <main>
@@ -120,6 +126,7 @@
                 </button>
             </footer>
         </div>
+        <div id="toast-container" class="toast-container"></div>
     </main>
 
     <!-- Transaction Modal -->
@@ -158,6 +165,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js" type="module"></script>
 </body>
 </html> 

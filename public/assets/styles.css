@@ -11,6 +11,8 @@
     --success: #4CAF50;
     --danger: #f44336;
     --card-bg: #ffffff;
+    --success-status-bg: rgba(37, 99, 235, 0.6);
+    --danger-status-bg:rgba(220, 38, 38, 0.6);
 }
 
 [data-theme="dark"] {
@@ -20,6 +22,8 @@
     --border: #404040;
     --shadow: 0 2px 4px rgba(0,0,0,0.2);
     --card-bg: #363636;
+    --success-status-bg: rgba(96, 165, 250, 0.5);
+    --danger-status-bg:rgba(220, 38, 38, 0.5);
 }
 
 /* Base styles */
@@ -57,9 +61,9 @@ main {
     padding: 1.5rem 1rem 1rem;
     border-radius: 8px;
     box-shadow: var(--shadow);
-    width: calc(100% - 1rem);
-    max-width: 600px;
-    min-height: calc(100vh - 1rem);
+    width: 100%;
+    max-width: 70%;
+    min-height: calc(100vh - 2rem);
     transition: background var(--transition), box-shadow var(--transition);
     margin: 0 auto;
     display: flex;
@@ -254,14 +258,14 @@ header {
     background: var(--card-bg);
     border-radius: 8px;
     box-shadow: var(--shadow);
-    width: 75%;
+    width: 60%;
 }
 
 .date-input-group {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
 }
 
 .date-input-group input[type="date"] {
@@ -273,7 +277,8 @@ header {
     font-size: 0.875rem;
     font-family: inherit;
     width: auto;
-    min-width: 130px;
+    min-width: 45%;
+    text-align: center;
 }
 
 .date-input-group input[type="date"]::-webkit-calendar-picker-indicator {
@@ -292,7 +297,7 @@ header {
     font-size: 0.875rem;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 670px) {
     .date-input-group {
         flex-direction: column;
         gap: 0.25rem;
@@ -642,9 +647,10 @@ footer {
 }
 
 /* Responsive adjustments */
-@media (max-width: 600px) {
+@media (max-width: 860px) {
     .container {
         padding: 1rem 0.75rem;
+        max-width: 100%;
     }
 
     .summary-cards {
@@ -1008,4 +1014,42 @@ footer {
 
 #cancelCategory:hover {
     background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+.toast-container {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 2000;
+}
+
+.toast {
+    color: #ffffff;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    max-width: 300px;
+    box-sizing: border-box;
+    word-wrap: break-word;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-align: center;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
+.toast.success {
+    background-color: var(--success-status-bg);
+}
+
+.toast.error {
+    background-color: var(--danger-status-bg);
 }

@@ -1,3 +1,6 @@
+import { ToastManager } from "./managers/toast";
+const toastManager = new ToastManager(document.getElementById('toast-container'));
+
 // Theme toggle functionality
 function getBaseUrl() {
     // First try to get it from the server-provided meta tag
@@ -424,9 +427,10 @@ async function loadTransactions() {
                         await handleFetchResponse(response);
                         await loadTransactions();
                         await updateTotals();
+                        toastManager.show('Transaction deleted!', 'error');
                     } catch (error) {
                         console.error('Error deleting transaction:', error);
-                        alert('Failed to delete transaction. Please try again.');
+                        toastManager.show('Failed to delete transaction. Please try again.', 'error');
                     }
                 }
             });
@@ -574,12 +578,19 @@ function loadCustomCategories() {
 }
 
 function saveCustomCategory(category) {
-    const customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
-    if (!customCategories.includes(category)) {
-        customCategories.push(category);
-        localStorage.setItem('customCategories', JSON.stringify(customCategories));
+    try {
+        const customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+        if (!customCategories.includes(category)) {
+            customCategories.push(category);
+            localStorage.setItem('customCategories', JSON.stringify(customCategories));
+            toastManager.show(`New category (${category}) added!`, 'success');
+        }
+        loadCustomCategories();
     }
-    loadCustomCategories();
+    catch (error) {
+        console.error('Error saving custom category:', error);
+        toastManager.show('Failed to save custom category. Please try again.', 'error');
+    }
 }
 
 function initCategoryHandling() {
@@ -756,9 +767,12 @@ function initModalHandling() {
             // Refresh transactions list and totals
             await loadTransactions();
             await updateTotals();
+
+            const transactionTypeMessage = currentTransactionType === 'income' ? 'Income' : 'Expense';
+            toastManager.show(`${transactionTypeMessage} saved!`, 'success');
         } catch (error) {
             console.error('Error saving transaction:', error);
-            alert('Failed to save transaction. Please try again.');
+            toastManager.show('Failed to save transaction. Please try again.', 'error');
         }
     });
 }
@@ -1038,8 +1052,17 @@ async function initMainPage() {
     updateTotals();
 }
 
+const registerServiceWorker = () => {
+     // Register PWA Service Worker
+     if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/service-worker.js")
+            .then((reg) => console.log("Service Worker registered:", reg.scope))
+            .catch((err) => console.log("Service Worker registration failed:", err));
+    }
+}
+
 // Initialize functionality
-document.addEventListener('DOMContentLoaded', () => {
+
     initThemeToggle();
     
     // Check which page we're on
@@ -1053,4 +1076,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initModalHandling();
         initMainPage();
     }
-}); 
+
+    registerServiceWorker();
+

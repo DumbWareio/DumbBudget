@@ -1,0 +1,25 @@
+
+services:
+  dumbbudget:
+    image: dumbwareio/dumbbudget:latest
+    container_name: dumbbudget
+    restart: unless-stopped
+    ports:
+      - ${DUMBBUDGET_PORT:-3000}:3000
+    volumes:
+      - ${DUMBBUDGET_DATA_PATH:-./data}:/app/data
+    environment:
+      - DUMBBUDGET_PIN=${DUMBBUDGET_PIN:-} # PIN to access the site
+      - BASE_URL=${DUMBBUDGET_BASE_URL:-http://localhost:3000} # URL to access the site
+      - CURRENCY=${DUMBBUDGET_CURRENCY:-USD} # Supported Currency Code: https://github.com/DumbWareio/DumbBudget?tab=readme-ov-file#supported-currencies
+      - SITE_TITLE=${DUMBBUDGET_SITE_TITLE:-DumbBudget} # Name to show on site
+      - INSTANCE_NAME=${DUMBBUDGET_INSTANCE_NAME:-} # Name of instance/account
+      # (OPTIONAL)
+      # Restrict origins - ex: https://subdomain.domain.tld,https://auth.proxy.tld,http://internalip:port' (default is '*')
+      # - ALLOWED_ORIGINS=${DUMBBUDGET_ALLOWED_ORIGINS:-http://localhost:3000}
+    # healthcheck:
+    #   test: wget --spider -q  http://127.0.0.1:3000
+    #   start_period: 20s
+    #   interval: 20s
+    #   timeout: 5s
+    #   retries: 3

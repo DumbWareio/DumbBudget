@@ -132,5 +132,11 @@ dist
 # Local data files
 data/transactions.json
 
-# Development config
-nodemon.json
+## Development config
+# nodemon.json
+
+# Generated PWA Files
+/public/*manifest.json
+/public/logo.*
+/public/assets/logo.*
+/public/assets/*manifest.json

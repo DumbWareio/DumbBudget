@@ -6,14 +6,19 @@
     <title>Loading...</title>
     <script src="config.js"></script>
     <script>
+        // Prevent theme flicker by setting theme immediately
+        (function() {
+            const theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
         document.addEventListener('DOMContentLoaded', () => {
-            const siteTitle = window.appConfig.title || 'DumbBudget';
+            const siteTitle = window.appConfig.title;
             document.title = `${siteTitle} - Login`;
             document.querySelector('h1').textContent = siteTitle;
         });
     </script>
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
     <main>
@@ -40,6 +45,6 @@
             <div class="pin-error" role="alert" aria-hidden="true">Incorrect PIN. Please try again.</div>
         </form>
     </main>
-    <script src="script.js"></script>
+    <script src="script.js" type="module"></script>
 </body>
 </html> 
