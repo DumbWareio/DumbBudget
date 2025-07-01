@@ -46,6 +46,17 @@ function debugLog(...args) {
     }
 }
 
+// HTML escaping function to prevent XSS attacks
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // Helper function to join paths with base path
 function joinPath(path) {
     const basePath = window.appConfig?.basePath || '';
@@ -358,10 +369,10 @@ async function loadTransactions() {
             <div class="transaction-item ${isRecurring ? 'recurring-instance' : ''}" data-id="${transaction.id}" data-type="${transaction.type}">
                 <div class="transaction-content">
                     <div class="details">
-                        <div class="description">${transaction.description}</div>
-                        ${transaction.notes ? `<div class="notes">${transaction.notes}</div>` : ''}
+                        <div class="description">${escapeHtml(transaction.description)}</div>
+                        ${transaction.notes ? `<div class="notes">${escapeHtml(transaction.notes)}</div>` : ''}
                         <div class="metadata">
-                            ${transaction.category ? `<span class="category">${transaction.category}</span>` : ''}
+                            ${transaction.category ? `<span class="category">${escapeHtml(transaction.category)}</span>` : ''}
                             <span class="date">${formattedDate}</span>
                             ${isRecurring ? `<span class="recurring-info">(Recurring)</span>` : ''}
                         </div>

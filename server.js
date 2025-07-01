@@ -36,6 +36,18 @@ function debugLog(...args) {
     }
 }
 
+// Input sanitization function to prevent XSS attacks
+function sanitizeInput(input) {
+    if (typeof input !== 'string') return input;
+    return input
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/\//g, '&#x2F;');
+}
+
 // Add logging to BASE_PATH extraction
 const BASE_PATH = (() => {
     if (!process.env.BASE_URL) {
@@ -446,9 +458,9 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
         const newTransaction = {
             id: crypto.randomUUID(),
             amount: parseFloat(amount),
-            description,
+            description: sanitizeInput(description),
             date: adjustedDate,
-            notes: notes || ''
+            notes: sanitizeInput(notes || '')
         };
 
         // Add recurring information if present
@@ -460,7 +472,7 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
         }
 
         if (type === 'expense') {
-            newTransaction.category = category;
+            newTransaction.category = sanitizeInput(category);
             transactions[key].expenses.push(newTransaction);
         } else {
             transactions[key].income.push(newTransaction);
@@ -846,23 +858,23 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                 // If type changed, move to expenses
                 if (type === 'expense') {
                     const transaction = monthData.income.splice(incomeIndex, 1)[0];
-                    transaction.category = category;
+                    transaction.category = sanitizeInput(category);
                     monthData.expenses.push({
                         ...transaction,
                         amount: parseFloat(amount),
-                        description,
+                        description: sanitizeInput(description),
                         date,
                         recurring: recurring || null,
-                        notes: notes || ''
+                        notes: sanitizeInput(notes || '')
                     });
                 } else {
                     monthData.income[incomeIndex] = {
                         ...monthData.income[incomeIndex],
                         amount: parseFloat(amount),
-                        description,
+                        description: sanitizeInput(description),
                         date,
                         recurring: recurring || null,
-                        notes: notes || ''
+                        notes: sanitizeInput(notes || '')
                     };
                 }
                 found = true;
@@ -879,20 +891,20 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                     monthData.income.push({
                         ...transaction,
                         amount: parseFloat(amount),
-                        description,
+                        description: sanitizeInput(description),
                         date,
                         recurring: recurring || null,
-                        notes: notes || ''
+                        notes: sanitizeInput(notes || '')
                     });
                 } else {
                     monthData.expenses[expenseIndex] = {
                         ...monthData.expenses[expenseIndex],
                         amount: parseFloat(amount),
-                        description,
-                        category,
+                        description: sanitizeInput(description),
+                        category: sanitizeInput(category),
                         date,
                         recurring: recurring || null,
-                        notes: notes || ''
+                        notes: sanitizeInput(notes || '')
                     };
                 }
                 found = true;
