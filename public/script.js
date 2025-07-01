@@ -46,6 +46,17 @@ function debugLog(...args) {
     }
 }
 
+// HTML escaping function to prevent XSS attacks
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // Helper function to join paths with base path
 function joinPath(path) {
     const basePath = window.appConfig?.basePath || '';
@@ -358,9 +369,10 @@ async function loadTransactions() {
             <div class="transaction-item ${isRecurring ? 'recurring-instance' : ''}" data-id="${transaction.id}" data-type="${transaction.type}">
                 <div class="transaction-content">
                     <div class="details">
-                        <div class="description">${transaction.description}</div>
+                        <div class="description">${escapeHtml(transaction.description)}</div>
+                        ${transaction.notes ? `<div class="notes">${escapeHtml(transaction.notes)}</div>` : ''}
                         <div class="metadata">
-                            ${transaction.category ? `<span class="category">${transaction.category}</span>` : ''}
+                            ${transaction.category ? `<span class="category">${escapeHtml(transaction.category)}</span>` : ''}
                             <span class="date">${formattedDate}</span>
                             ${isRecurring ? `<span class="recurring-info">(Recurring)</span>` : ''}
                         </div>
@@ -466,6 +478,7 @@ function editTransaction(id, transaction, isRecurringInstance) {
     document.getElementById('amount').value = transaction.amount;
     document.getElementById('description').value = transaction.description;
     document.getElementById('transactionDate').value = transaction.date;
+    document.getElementById('notes').value = transaction.notes || '';
     
     // Update the currentTransactionType to match the transaction being edited
     currentTransactionType = transaction.type;
@@ -733,7 +746,8 @@ function initModalHandling() {
             description: document.getElementById('description').value,
             category: currentTransactionType === 'expense' ? document.getElementById('category').value : null,
             date: document.getElementById('transactionDate').value,
-            recurring: buildRecurringPattern()
+            recurring: buildRecurringPattern(),
+            notes: document.getElementById('notes').value
         };
 
         try {
@@ -1047,6 +1061,7 @@ async function initMainPage() {
             const tableData = transactions.map(t => [
                 t.date,
                 t.description,
+                t.notes || '-',
                 t.category || '-',
                 formatCurrency(t.type === 'expense' ? -t.amount : t.amount),
                 t.type
@@ -1054,17 +1069,18 @@ async function initMainPage() {
             
             doc.autoTable({
                 startY: 85,
-                head: [['Date', 'Description', 'Category', 'Amount', 'Type']],
+                head: [['Date', 'Description', 'Notes', 'Category', 'Amount', 'Type']],
                 body: tableData,
                 theme: 'grid',
                 headStyles: { fillColor: [66, 66, 66] },
-                styles: { fontSize: 10 },
+                styles: { fontSize: 9 },
                 columnStyles: {
-                    0: { cellWidth: 30 }, // Date
-                    1: { cellWidth: 60 }, // Description
-                    2: { cellWidth: 30 }, // Category
-                    3: { cellWidth: 30 }, // Amount
-                    4: { cellWidth: 20 }  // Type
+                    0: { cellWidth: 25 }, // Date
+                    1: { cellWidth: 40 }, // Description
+                    2: { cellWidth: 35 }, // Notes
+                    3: { cellWidth: 25 }, // Category
+                    4: { cellWidth: 25 }, // Amount
+                    5: { cellWidth: 15 }  // Type
                 }
             });
             

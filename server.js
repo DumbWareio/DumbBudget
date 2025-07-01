@@ -36,6 +36,18 @@ function debugLog(...args) {
     }
 }
 
+// Input sanitization function to prevent XSS attacks
+function sanitizeInput(input) {
+    if (typeof input !== 'string') return input;
+    return input
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/\//g, '&#x2F;');
+}
+
 // Add logging to BASE_PATH extraction
 const BASE_PATH = (() => {
     if (!process.env.BASE_URL) {
@@ -362,7 +374,7 @@ async function getTransactionsInRange(startDate, endDate) {
 // API Routes - all under BASE_PATH
 app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
     try {
-        const { type, amount, description, category, date, recurring } = req.body;
+        const { type, amount, description, category, date, recurring, notes } = req.body;
         
         // Basic validation
         if (!type || !amount || !description || !date) {
@@ -446,8 +458,9 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
         const newTransaction = {
             id: crypto.randomUUID(),
             amount: parseFloat(amount),
-            description,
-            date: adjustedDate
+            description: sanitizeInput(description),
+            date: adjustedDate,
+            notes: sanitizeInput(notes || '')
         };
 
         // Add recurring information if present
@@ -459,7 +472,7 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
         }
 
         if (type === 'expense') {
-            newTransaction.category = category;
+            newTransaction.category = sanitizeInput(category);
             transactions[key].expenses.push(newTransaction);
         } else {
             transactions[key].income.push(newTransaction);
@@ -764,9 +777,15 @@ app.get(BASE_PATH + '/api/export/:year/:month', authMiddleware, async (req, res)
         ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
         // Convert to CSV
-        const csvRows = ['Date,Type,Category,Description,Amount'];
+        const csvRows = ['Date,Type,Category,Description,Notes,Amount'];
         allTransactions.forEach(t => {
-            csvRows.push(`${t.date},${t.type},${t.category || ''},${t.description},${t.amount}`);
+            // Escape notes and description to handle commas and quotes
+            const escapedDescription = (t.description || '').replace(/"/g, '""');
+            const escapedNotes = (t.notes || '').replace(/"/g, '""');
+            const formattedDescription = escapedDescription.includes(',') ? `"${escapedDescription}"` : escapedDescription;
+            const formattedNotes = escapedNotes.includes(',') ? `"${escapedNotes}"` : escapedNotes;
+            
+            csvRows.push(`${t.date},${t.type},${t.category || ''},${formattedDescription},${formattedNotes},${t.amount}`);
         });
 
         res.setHeader('Content-Type', 'text/csv');
@@ -788,15 +807,17 @@ app.get(BASE_PATH + '/api/export/range', authMiddleware, async (req, res) => {
         const transactions = await getTransactionsInRange(start, end);
 
         // Convert to CSV with specified format
-        const csvRows = ['Category,Date,Description,Value'];
+        const csvRows = ['Category,Date,Description,Notes,Value'];
         transactions.forEach(t => {
             const category = t.type === 'income' ? 'Income' : t.category;
             const value = t.type === 'income' ? t.amount : -t.amount;
-            // Escape description to handle commas and quotes
-            const escapedDescription = t.description.replace(/"/g, '""');
+            // Escape description and notes to handle commas and quotes
+            const escapedDescription = (t.description || '').replace(/"/g, '""');
+            const escapedNotes = (t.notes || '').replace(/"/g, '""');
             const formattedDescription = escapedDescription.includes(',') ? `"${escapedDescription}"` : escapedDescription;
+            const formattedNotes = escapedNotes.includes(',') ? `"${escapedNotes}"` : escapedNotes;
             
-            csvRows.push(`${category},${t.date},${formattedDescription},${value}`);
+            csvRows.push(`${category},${t.date},${formattedDescription},${formattedNotes},${value}`);
         });
 
         res.setHeader('Content-Type', 'text/csv');
@@ -811,7 +832,7 @@ app.get(BASE_PATH + '/api/export/range', authMiddleware, async (req, res) => {
 app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const { type, amount, description, category, date, recurring } = req.body;
+        const { type, amount, description, category, date, recurring, notes } = req.body;
         
         // Basic validation
         if (!type || !amount || !description || !date) {
@@ -837,21 +858,23 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                 // If type changed, move to expenses
                 if (type === 'expense') {
                     const transaction = monthData.income.splice(incomeIndex, 1)[0];
-                    transaction.category = category;
+                    transaction.category = sanitizeInput(category);
                     monthData.expenses.push({
                         ...transaction,
                         amount: parseFloat(amount),
-                        description,
+                        description: sanitizeInput(description),
                         date,
-                        recurring: recurring || null
+                        recurring: recurring || null,
+                        notes: sanitizeInput(notes || '')
                     });
                 } else {
                     monthData.income[incomeIndex] = {
                         ...monthData.income[incomeIndex],
                         amount: parseFloat(amount),
-                        description,
+                        description: sanitizeInput(description),
                         date,
-                        recurring: recurring || null
+                        recurring: recurring || null,
+                        notes: sanitizeInput(notes || '')
                     };
                 }
                 found = true;
@@ -868,18 +891,20 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                     monthData.income.push({
                         ...transaction,
                         amount: parseFloat(amount),
-                        description,
+                        description: sanitizeInput(description),
                         date,
-                        recurring: recurring || null
+                        recurring: recurring || null,
+                        notes: sanitizeInput(notes || '')
                     });
                 } else {
                     monthData.expenses[expenseIndex] = {
                         ...monthData.expenses[expenseIndex],
                         amount: parseFloat(amount),
-                        description,
-                        category,
+                        description: sanitizeInput(description),
+                        category: sanitizeInput(category),
                         date,
-                        recurring: recurring || null
+                        recurring: recurring || null,
+                        notes: sanitizeInput(notes || '')
                     };
                 }
                 found = true;
@@ -1029,7 +1054,8 @@ app.get(BASE_PATH + '/api/calendar/transactions', apiAuthMiddleware, async (req,
                     filteredTransactions.push({
                         type: 'income',
                         ...transaction,
-                        amount: parseFloat(transaction.amount)
+                        amount: parseFloat(transaction.amount),
+                        notes: transaction.notes || ''
                     });
                 });
                 
@@ -1038,7 +1064,8 @@ app.get(BASE_PATH + '/api/calendar/transactions', apiAuthMiddleware, async (req,
                     filteredTransactions.push({
                         type: 'expense',
                         ...transaction,
-                        amount: parseFloat(transaction.amount)
+                        amount: parseFloat(transaction.amount),
+                        notes: transaction.notes || ''
                     });
                 });
             }
